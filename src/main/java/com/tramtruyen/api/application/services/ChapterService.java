@@ -106,4 +106,32 @@ public class ChapterService {
                 chapterPage.isLast()
         );
     }
+
+    // PHẢI CÓ @Transactional vì chúng ta sẽ update cột view của Novel
+    @Transactional
+    public ChapterResponse getChapterDetail(UUID chapterId) {
+        // 1. Tìm chương truyện theo ID
+        ChapterEntity chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chương truyện này!"));
+
+        // 2. Lấy bộ truyện chứa chương này ra
+        NovelEntity novel = chapter.getNovel();
+
+        // 3. TĂNG VIEW: Cộng 1 vào tổng số lượt đọc hiện tại
+        novel.setTotalViews(novel.getTotalViews() + 1);
+
+        // 4. Lưu lại bộ truyện (Spring Data JPA sẽ tự động sinh lệnh UPDATE total_views)
+        novelRepository.save(novel);
+
+        // 5. Trả về toàn bộ thông tin chương (Bao gồm cục text nội dung siêu dài)
+        return new ChapterResponse(
+                chapter.getId(),
+                novel.getId(),
+                chapter.getChapterNo(),
+                chapter.getTitle(),
+                chapter.getContent(), // Trả về nội dung để độc giả đọc
+                chapter.getIsPublished(),
+                chapter.getPublishedAt()
+        );
+    }
 }
