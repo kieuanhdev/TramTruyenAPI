@@ -3,6 +3,7 @@ package com.tramtruyen.api.application.services;
 import com.tramtruyen.api.infrastructure.persistence.entity.UserEntity;
 import com.tramtruyen.api.infrastructure.persistence.repository.UserRepository;
 import com.tramtruyen.api.presentation.payloads.request.UserCreateRequest;
+import com.tramtruyen.api.presentation.payloads.request.UserUpdateRequest;
 import com.tramtruyen.api.presentation.payloads.response.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,31 @@ public class UserService {
                 user.getRole(),
                 user.getStatus(),
                 user.getCreatedAt()
+        );
+    }
+
+    @Transactional
+    public UserResponse updateUser(UUID id, UserUpdateRequest request) {
+        // 1. Tìm user trong DB
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + id));
+
+        // 2. Cập nhật thông tin (Chỉ gọi được các hàm set mà ta đã cho phép ở Entity)
+        user.setFullName(request.fullName());
+        user.setAvatarUrl(request.avatarUrl());
+
+        // 3. Lưu vào DB (JPA sẽ tự động tạo câu lệnh UPDATE thay vì INSERT vì user đã có sẵn ID)
+        UserEntity updatedUser = userRepository.save(user);
+
+        // 4. Trả về dữ liệu mới
+        return new UserResponse(
+                updatedUser.getId(),
+                updatedUser.getEmail(),
+                updatedUser.getFullName(),
+                updatedUser.getAvatarUrl(),
+                updatedUser.getRole(),
+                updatedUser.getStatus(),
+                updatedUser.getCreatedAt()
         );
     }
 }

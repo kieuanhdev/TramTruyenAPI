@@ -2,6 +2,7 @@ package com.tramtruyen.api.presentation.controllers;
 
 import com.tramtruyen.api.application.services.UserService;
 import com.tramtruyen.api.presentation.payloads.request.UserCreateRequest;
+import com.tramtruyen.api.presentation.payloads.request.UserUpdateRequest;
 import com.tramtruyen.api.presentation.payloads.response.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,14 @@ public class UserController {
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
         UserResponse response = userService.getUserById(id);
         // Trả về HTTP Status 200 (OK) cùng với dữ liệu
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable UUID id,
+            @Valid @RequestBody UserUpdateRequest request) {
+        UserResponse response = userService.updateUser(id, request);
         return ResponseEntity.ok(response);
     }
 }
