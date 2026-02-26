@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -21,5 +23,12 @@ public class UserController {
         UserResponse response = userService.createUser(request);
         // Trả về HTTP Status 201 (Created) khi tạo mới thành công
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
+        UserResponse response = userService.getUserById(id);
+        // Trả về HTTP Status 200 (OK) cùng với dữ liệu
+        return ResponseEntity.ok(response);
     }
 }

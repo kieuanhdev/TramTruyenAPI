@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -43,6 +45,24 @@ public class UserService {
                 savedUser.getRole(),
                 savedUser.getStatus(),
                 savedUser.getCreatedAt()
+        );
+    }
+
+    // Không cần @Transactional ở đây vì ta chỉ ĐỌC dữ liệu (Read-only), giúp tăng hiệu năng
+    public UserResponse getUserById(UUID id) {
+        // 1. Tìm user trong DB, nếu không có thì ném ra lỗi
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + id));
+
+        // 2. Map Entity sang DTO để giấu passwordHash
+        return new UserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getAvatarUrl(),
+                user.getRole(),
+                user.getStatus(),
+                user.getCreatedAt()
         );
     }
 }
