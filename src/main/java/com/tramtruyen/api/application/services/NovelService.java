@@ -8,9 +8,16 @@ import com.tramtruyen.api.infrastructure.persistence.repository.NovelRepository;
 import com.tramtruyen.api.infrastructure.persistence.repository.UserRepository;
 import com.tramtruyen.api.presentation.payloads.request.NovelCreateRequest;
 import com.tramtruyen.api.presentation.payloads.response.NovelResponse;
+import com.tramtruyen.api.presentation.payloads.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +60,44 @@ public class NovelService {
                 savedNovel.getStatus(),
                 savedNovel.getTotalViews(),
                 savedNovel.getCreatedAt()
+        );
+    }
+
+    // Chỉ đọc dữ liệu nên không cần @Transactional
+    public PageResponse<NovelResponse> getAllNovels(int pageNo, int pageSize, String sortBy, String sortDir) {
+        // 1. Tạo đối tượng sắp xếp (Tăng dần ASC hoặc Giảm dần DESC)
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        // 2. Cấu hình Phân trang
+        Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
+
+        // 3. Gọi Repository (Spring JPA tự động sinh câu lệnh SQL có LIMIT và OFFSET)
+        Page<NovelEntity> novelPage = novelRepository.findAll(pageable);
+
+        // 4. Map danh sách Entity sang DTO
+        List<NovelResponse> content = novelPage.getContent().stream()
+                .map(novel -> new NovelResponse(
+                        novel.getId(),
+                        novel.getTitle(),
+                        novel.getAuthor().getFullName(),
+                        novel.getCategory().getName(),
+                        novel.getSummary(),
+                        novel.getCoverUrl(),
+                        novel.getStatus(),
+                        novel.getTotalViews(),
+                        novel.getCreatedAt()
+                )).toList();
+
+        // 5. Đóng gói vào PageResponse và trả về
+        return new PageResponse<>(
+                content,
+                novelPage.getNumber(),
+                novelPage.getSize(),
+                novelPage.getTotalElements(),
+                novelPage.getTotalPages(),
+                novelPage.isLast()
         );
     }
 }
