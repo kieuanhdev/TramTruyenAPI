@@ -58,6 +58,8 @@ public class SecurityConfig {
                         // Cho phép mọi người ĐỌC dữ liệu thoải mái (GET)
                         .requestMatchers(HttpMethod.GET, "/api/v1/**").permitAll()
                         // Tất cả các request khác (POST truyện, POST chương...) BẮT BUỘC ĐĂNG NHẬP
+                        // THÊM DÒNG NÀY VÀO: Mở toang cửa cho Swagger UI
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 );
 
