@@ -6,6 +6,7 @@ import com.tramtruyen.api.presentation.payloads.request.UserCreateRequest;
 import com.tramtruyen.api.presentation.payloads.request.UserUpdateRequest;
 import com.tramtruyen.api.presentation.payloads.response.UserResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
@@ -25,11 +27,13 @@ public class UserService {
             // Sau này chúng ta sẽ custom Exception sau cho mượt
         }
 
+        String hashedPassword = passwordEncoder.encode(request.password());
+
         // 2. Chuyển đổi từ DTO sang Entity (Dùng Builder chuẩn mà bạn đã viết)
         UserEntity newUser = UserEntity.builder()
                 .email(request.email())
                 // TODO: Sau này tích hợp Spring Security sẽ băm mật khẩu bằng BCrypt ở đây
-                .passwordHash(request.password())
+                .passwordHash(hashedPassword)
                 .fullName(request.fullName())
                 .avatarUrl(request.avatarUrl())
                 .build();
