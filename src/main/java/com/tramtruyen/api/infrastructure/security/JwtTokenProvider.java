@@ -1,5 +1,7 @@
 package com.tramtruyen.api.infrastructure.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -38,5 +40,26 @@ public class JwtTokenProvider {
                 .expiration(expiryDate)
                 .signWith(key()) // Ký điện tử bằng Secret Key
                 .compact();
+    }
+
+    // 2. Hàm lấy Email (Username) từ Token
+    public String getUsernameFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(key())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        return claims.getSubject();
+    }
+
+    // 3. Hàm kiểm tra Token có hợp lệ không (Chưa hết hạn, chữ ký đúng)
+    public boolean validateToken(String authToken) {
+        try {
+            Jwts.parser().verifyWith(key()).build().parseSignedClaims(authToken);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            // Trong thực tế có thể log lỗi ra đây để debug
+            return false;
+        }
     }
 }
