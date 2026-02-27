@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/novels")
 @RequiredArgsConstructor
@@ -24,6 +26,12 @@ public class NovelController {
     public ResponseEntity<NovelResponse> createNovel(@Valid @RequestBody NovelCreateRequest request) {
         NovelResponse response = novelService.createNovel(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<NovelResponse> getNovelById(@PathVariable UUID id) {
+        NovelResponse response = novelService.getNovelById(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

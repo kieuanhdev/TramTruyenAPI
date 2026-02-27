@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -65,6 +66,24 @@ public class NovelService {
                 savedNovel.getStatus(),
                 savedNovel.getTotalViews(),
                 savedNovel.getCreatedAt()
+        );
+    }
+
+    // Chỉ đọc dữ liệu nên không cần @Transactional
+    public NovelResponse getNovelById(UUID id) {
+        NovelEntity novel = novelRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy truyện với ID: " + id));
+
+        return new NovelResponse(
+                novel.getId(),
+                novel.getTitle(),
+                novel.getAuthor().getFullName(),
+                novel.getCategory().getName(),
+                novel.getSummary(),
+                novel.getCoverUrl(),
+                novel.getStatus(),
+                novel.getTotalViews(),
+                novel.getCreatedAt()
         );
     }
 
