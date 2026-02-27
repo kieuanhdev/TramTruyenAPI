@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,9 +30,13 @@ public class NovelService {
 
     @Transactional
     public NovelResponse createNovel(NovelCreateRequest request) {
-        // 1. Kiểm tra Tác giả có tồn tại không
-        UserEntity author = userRepository.findById(request.authorId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tác giả với ID này!"));
+        // 1. LẤY DANH TÍNH TỪ TOKEN (BẢO MẬT TUYỆT ĐỐI)
+        // SecurityContextHolder chính là két sắt chứa thông tin người dùng đang gọi API
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // 2. Tìm Tác giả bằng Email (Không thể mạo danh được nữa)
+        UserEntity author = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tác giả với Email này!"));
 
         // 2. Kiểm tra Thể loại có tồn tại không
         CategoryEntity category = categoryRepository.findById(request.categoryId())

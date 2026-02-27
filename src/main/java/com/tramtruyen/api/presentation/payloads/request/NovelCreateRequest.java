@@ -5,8 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record NovelCreateRequest(
-        @NotNull(message = "ID Tác giả không được để trống")
-        UUID authorId,
 
         @NotNull(message = "ID Thể loại không được để trống")
         Integer categoryId,

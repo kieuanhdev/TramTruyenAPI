@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +19,8 @@ public class NovelController {
     private final NovelService novelService;
 
     @PostMapping
+    // CHỈ CHO PHÉP ROLE LÀ AUTHOR HOẶC ADMIN ĐƯỢC VÀO
+    @PreAuthorize("hasRole('AUTHOR') or hasRole('ADMIN')")
     public ResponseEntity<NovelResponse> createNovel(@Valid @RequestBody NovelCreateRequest request) {
         NovelResponse response = novelService.createNovel(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
