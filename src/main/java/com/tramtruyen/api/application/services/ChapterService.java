@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,9 +30,19 @@ public class ChapterService {
 
     @Transactional
     public ChapterResponse createChapter(UUID novelId, ChapterCreateRequest request) {
+
+        // 1. Lấy danh tính người đang thao tác từ Token
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
         // 1. Kiểm tra bộ truyện có tồn tại không
         NovelEntity novel = novelRepository.findById(novelId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy truyện với ID này!"));
+
+        // 3. CHỐT CHẶN BẢO MẬT: Kiểm tra quyền sở hữu
+        // So sánh email của tác giả bộ truyện với email của người đang cầm Token
+        if (!novel.getAuthor().getEmail().equals(currentUserEmail)) {
+            throw new RuntimeException("Lỗi 403: Bạn không có quyền đăng chương cho bộ truyện của người khác!");
+        }
 
         // 2. Kiểm tra trùng số thứ tự chương (Bảo vệ tính toàn vẹn dữ liệu)
         if (chapterRepository.existsByNovelAndChapterNo(novel, request.chapterNo())) {
