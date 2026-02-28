@@ -40,4 +40,11 @@ public class UserController {
         UserResponse response = userService.updateUser(id, request);
         return ResponseEntity.ok(response);
     }
+
+    // Lấy thông tin người dùng hiện tại từ Token
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser() {
+        UserResponse response = userService.getCurrentUser();
+        return ResponseEntity.ok(response);
+    }
 }

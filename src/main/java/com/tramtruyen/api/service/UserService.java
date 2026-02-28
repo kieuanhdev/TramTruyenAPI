@@ -6,6 +6,7 @@ import com.tramtruyen.api.dto.request.UserCreateRequest;
 import com.tramtruyen.api.dto.request.UserUpdateRequest;
 import com.tramtruyen.api.dto.response.UserResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,6 +94,23 @@ public class UserService {
                 updatedUser.getRole(),
                 updatedUser.getStatus(),
                 updatedUser.getCreatedAt()
+        );
+    }
+
+    // Lấy thông tin người dùng hiện tại từ Token
+    public UserResponse getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng hiện tại!"));
+
+        return new UserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getAvatarUrl(),
+                user.getRole(),
+                user.getStatus(),
+                user.getCreatedAt()
         );
     }
 }
