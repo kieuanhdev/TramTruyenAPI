@@ -70,4 +70,16 @@ public class CommentController {
         commentService.deleteComment(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/api/v1/comments/{id}/like")
+    public ResponseEntity<CommentResponse> toggleLike(@PathVariable UUID id) {
+        CommentResponse response = commentService.toggleLike(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/v1/comments/{id}/dislike")
+    public ResponseEntity<CommentResponse> toggleDislike(@PathVariable UUID id) {
+        CommentResponse response = commentService.toggleDislike(id);
+        return ResponseEntity.ok(response);
+    }
 }

@@ -2,9 +2,11 @@ package com.tramtruyen.api.service;
 
 import com.tramtruyen.api.model.ChapterEntity;
 import com.tramtruyen.api.model.CommentEntity;
+import com.tramtruyen.api.model.CommentLikeEntity;
 import com.tramtruyen.api.model.NovelEntity;
 import com.tramtruyen.api.model.UserEntity;
 import com.tramtruyen.api.repository.ChapterRepository;
+import com.tramtruyen.api.repository.CommentLikeRepository;
 import com.tramtruyen.api.repository.CommentRepository;
 import com.tramtruyen.api.repository.NovelRepository;
 import com.tramtruyen.api.repository.UserRepository;
@@ -16,11 +18,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -28,6 +32,7 @@ import java.util.UUID;
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final UserRepository userRepository;
     private final NovelRepository novelRepository;
     private final ChapterRepository chapterRepository;
@@ -119,10 +124,68 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
+    @Transactional
+    public CommentResponse toggleLike(UUID commentId) {
+        UserEntity user = getCurrentUser();
+        CommentEntity comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bình luận này!"));
+        Optional<CommentLikeEntity> existing = commentLikeRepository.findByCommentIdAndUserId(commentId, user.getId());
+        if (existing.isPresent()) {
+            CommentLikeEntity like = existing.get();
+            if ("LIKE".equals(like.getType())) {
+                commentLikeRepository.delete(like);
+            } else {
+                like.setType("LIKE");
+                commentLikeRepository.save(like);
+            }
+        } else {
+            CommentLikeEntity like = CommentLikeEntity.builder()
+                    .user(user)
+                    .comment(comment)
+                    .type("LIKE")
+                    .build();
+            commentLikeRepository.save(like);
+        }
+        return mapToResponse(comment);
+    }
+
+    @Transactional
+    public CommentResponse toggleDislike(UUID commentId) {
+        UserEntity user = getCurrentUser();
+        CommentEntity comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bình luận này!"));
+        Optional<CommentLikeEntity> existing = commentLikeRepository.findByCommentIdAndUserId(commentId, user.getId());
+        if (existing.isPresent()) {
+            CommentLikeEntity like = existing.get();
+            if ("DISLIKE".equals(like.getType())) {
+                commentLikeRepository.delete(like);
+            } else {
+                like.setType("DISLIKE");
+                commentLikeRepository.save(like);
+            }
+        } else {
+            CommentLikeEntity like = CommentLikeEntity.builder()
+                    .user(user)
+                    .comment(comment)
+                    .type("DISLIKE")
+                    .build();
+            commentLikeRepository.save(like);
+        }
+        return mapToResponse(comment);
+    }
+
     private UserEntity getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
+    }
+
+    private Optional<UserEntity> getCurrentUserOptional() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return Optional.empty();
+        }
+        return userRepository.findByEmail(auth.getName());
     }
 
     private PageResponse<CommentResponse> buildPageResponse(Page<CommentEntity> page) {
@@ -140,6 +203,13 @@ public class CommentService {
     }
 
     private CommentResponse mapToResponse(CommentEntity c) {
+        long likeCount = commentLikeRepository.countByCommentIdAndType(c.getId(), "LIKE");
+        long dislikeCount = commentLikeRepository.countByCommentIdAndType(c.getId(), "DISLIKE");
+        String userReaction = getCurrentUserOptional()
+                .flatMap(u -> commentLikeRepository.findByCommentIdAndUserId(c.getId(), u.getId()))
+                .map(CommentLikeEntity::getType)
+                .orElse(null);
+
         List<CommentResponse> replies = List.of();
         if (c.getParentComment() == null) {
             List<CommentEntity> replyList = commentRepository.findByParentCommentIdOrderByCreatedAtAsc(c.getId());
@@ -155,11 +225,20 @@ public class CommentService {
                 c.getNovel() != null ? c.getNovel().getId() : null,
                 c.getChapter() != null ? c.getChapter().getId() : null,
                 c.getParentComment() != null ? c.getParentComment().getId() : null,
+                likeCount,
+                dislikeCount,
+                userReaction,
                 replies
         );
     }
 
     private CommentResponse mapToResponseSimple(CommentEntity c) {
+        long likeCount = commentLikeRepository.countByCommentIdAndType(c.getId(), "LIKE");
+        long dislikeCount = commentLikeRepository.countByCommentIdAndType(c.getId(), "DISLIKE");
+        String userReaction = getCurrentUserOptional()
+                .flatMap(u -> commentLikeRepository.findByCommentIdAndUserId(c.getId(), u.getId()))
+                .map(CommentLikeEntity::getType)
+                .orElse(null);
         return new CommentResponse(
                 c.getId(),
                 c.getUser().getId(),
@@ -170,6 +249,9 @@ public class CommentService {
                 c.getNovel() != null ? c.getNovel().getId() : null,
                 c.getChapter() != null ? c.getChapter().getId() : null,
                 c.getParentComment() != null ? c.getParentComment().getId() : null,
+                likeCount,
+                dislikeCount,
+                userReaction,
                 List.of()
         );
     }

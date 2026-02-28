@@ -14,5 +14,8 @@ public record CommentResponse(
         UUID novelId,
         UUID chapterId,
         UUID parentCommentId,
+        long likeCount,
+        long dislikeCount,
+        String userReaction,
         List<CommentResponse> replies
 ) {}
