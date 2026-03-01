@@ -113,4 +113,24 @@ public class UserService {
                 user.getCreatedAt()
         );
     }
+
+    @Transactional
+    public UserResponse updateCurrentUser(UserUpdateRequest request) {
+        UserEntity user = userRepository.findByEmail(
+                        SecurityContextHolder.getContext().getAuthentication().getName())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng hiện tại!"));
+        user.setFullName(request.fullName().trim());
+        user.setAvatarUrl(request.avatarUrl() != null && !request.avatarUrl().isBlank()
+                ? request.avatarUrl().trim() : null);
+        UserEntity updated = userRepository.save(user);
+        return new UserResponse(
+                updated.getId(),
+                updated.getEmail(),
+                updated.getFullName(),
+                updated.getAvatarUrl(),
+                updated.getRole(),
+                updated.getStatus(),
+                updated.getCreatedAt()
+        );
+    }
 }

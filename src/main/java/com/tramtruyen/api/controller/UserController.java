@@ -47,4 +47,11 @@ public class UserController {
         UserResponse response = userService.getCurrentUser();
         return ResponseEntity.ok(response);
     }
+
+    // Cập nhật thông tin cá nhân của người dùng hiện tại
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateCurrentUser(@Valid @RequestBody UserUpdateRequest request) {
+        UserResponse response = userService.updateCurrentUser(request);
+        return ResponseEntity.ok(response);
+    }
 }
