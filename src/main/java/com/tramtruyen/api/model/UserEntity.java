@@ -3,6 +3,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -35,6 +36,10 @@ public class UserEntity {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
+    @Setter
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
     @Column(name = "role", nullable = false, length = 20)
     private String role;
 
@@ -48,11 +53,12 @@ public class UserEntity {
     // Builder gắn thẳng vào constructor này để ÉP người code phải truyền những trường bắt buộc
     // Đồng thời gán luôn giá trị mặc định cho role và status ở đây cực kỳ an toàn
     @Builder
-    private UserEntity(String email, String passwordHash, String fullName, String avatarUrl) {
+    private UserEntity(String email, String passwordHash, String fullName, String avatarUrl, LocalDate dateOfBirth) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
         this.avatarUrl = avatarUrl;
+        this.dateOfBirth = dateOfBirth;
         this.role = "READER";   // Khởi tạo mặc định chuẩn xác
         this.status = "ACTIVE"; // Khởi tạo mặc định chuẩn xác
     }

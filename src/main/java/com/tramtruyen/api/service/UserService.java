@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -49,21 +50,20 @@ public class UserService {
         // 2. Chuyển đổi từ DTO sang Entity (Dùng Builder chuẩn mà bạn đã viết)
         UserEntity newUser = UserEntity.builder()
                 .email(request.email())
-                // TODO: Sau này tích hợp Spring Security sẽ băm mật khẩu bằng BCrypt ở đây
                 .passwordHash(hashedPassword)
                 .fullName(request.fullName())
                 .avatarUrl(request.avatarUrl())
+                .dateOfBirth(request.dateOfBirth())
                 .build();
 
-        // 3. Lưu xuống Database
         UserEntity savedUser = userRepository.save(newUser);
 
-        // 4. Map Entity ngược lại thành DTO để trả về Frontend an toàn
         return new UserResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getFullName(),
                 savedUser.getAvatarUrl(),
+                savedUser.getDateOfBirth(),
                 savedUser.getRole(),
                 savedUser.getStatus(),
                 savedUser.getCreatedAt()
@@ -82,6 +82,7 @@ public class UserService {
                 user.getEmail(),
                 user.getFullName(),
                 user.getAvatarUrl(),
+                user.getDateOfBirth(),
                 user.getRole(),
                 user.getStatus(),
                 user.getCreatedAt()
@@ -94,19 +95,22 @@ public class UserService {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + id));
 
-        // 2. Cập nhật thông tin (Chỉ gọi được các hàm set mà ta đã cho phép ở Entity)
         user.setFullName(request.fullName());
-        user.setAvatarUrl(request.avatarUrl());
+        if (request.avatarUrl() != null) {
+            user.setAvatarUrl(request.avatarUrl().isBlank() ? null : request.avatarUrl().trim());
+        }
+        if (request.dateOfBirth() != null) {
+            user.setDateOfBirth(request.dateOfBirth());
+        }
 
-        // 3. Lưu vào DB (JPA sẽ tự động tạo câu lệnh UPDATE thay vì INSERT vì user đã có sẵn ID)
         UserEntity updatedUser = userRepository.save(user);
 
-        // 4. Trả về dữ liệu mới
         return new UserResponse(
                 updatedUser.getId(),
                 updatedUser.getEmail(),
                 updatedUser.getFullName(),
                 updatedUser.getAvatarUrl(),
+                updatedUser.getDateOfBirth(),
                 updatedUser.getRole(),
                 updatedUser.getStatus(),
                 updatedUser.getCreatedAt()
@@ -124,6 +128,7 @@ public class UserService {
                 user.getEmail(),
                 user.getFullName(),
                 user.getAvatarUrl(),
+                user.getDateOfBirth(),
                 user.getRole(),
                 user.getStatus(),
                 user.getCreatedAt()
@@ -136,16 +141,17 @@ public class UserService {
                         SecurityContextHolder.getContext().getAuthentication().getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng hiện tại!"));
         user.setFullName(request.fullName().trim());
-        // Chỉ cập nhật avatarUrl khi được truyền vào (tránh ghi đè avatar vừa upload)
         if (request.avatarUrl() != null) {
             user.setAvatarUrl(request.avatarUrl().isBlank() ? null : request.avatarUrl().trim());
         }
+        user.setDateOfBirth(request.dateOfBirth());
         UserEntity updated = userRepository.save(user);
         return new UserResponse(
                 updated.getId(),
                 updated.getEmail(),
                 updated.getFullName(),
                 updated.getAvatarUrl(),
+                updated.getDateOfBirth(),
                 updated.getRole(),
                 updated.getStatus(),
                 updated.getCreatedAt()
@@ -185,6 +191,7 @@ public class UserService {
                 updated.getEmail(),
                 updated.getFullName(),
                 updated.getAvatarUrl(),
+                updated.getDateOfBirth(),
                 updated.getRole(),
                 updated.getStatus(),
                 updated.getCreatedAt()
