@@ -2,6 +2,12 @@ spring:
   application:
     name: TramTruyenAPI
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 5MB
+
   # C?u h�nh k?t n?i PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/tramtruyen_db
@@ -22,3 +28,5 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration: 86400000
+  upload:
+    base-path: ./uploads

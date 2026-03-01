@@ -6,19 +6,35 @@ import com.tramtruyen.api.dto.request.UserCreateRequest;
 import com.tramtruyen.api.dto.request.UserUpdateRequest;
 import com.tramtruyen.api.dto.response.UserResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
+            "image/jpeg", "image/png", "image/gif", "image/webp"
+    );
+    private static final long MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.upload.base-path:./uploads}")
+    private String uploadBasePath;
 
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
@@ -120,8 +136,10 @@ public class UserService {
                         SecurityContextHolder.getContext().getAuthentication().getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng hiện tại!"));
         user.setFullName(request.fullName().trim());
-        user.setAvatarUrl(request.avatarUrl() != null && !request.avatarUrl().isBlank()
-                ? request.avatarUrl().trim() : null);
+        // Chỉ cập nhật avatarUrl khi được truyền vào (tránh ghi đè avatar vừa upload)
+        if (request.avatarUrl() != null) {
+            user.setAvatarUrl(request.avatarUrl().isBlank() ? null : request.avatarUrl().trim());
+        }
         UserEntity updated = userRepository.save(user);
         return new UserResponse(
                 updated.getId(),
@@ -132,5 +150,53 @@ public class UserService {
                 updated.getStatus(),
                 updated.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public UserResponse uploadAvatar(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn ảnh để tải lên!");
+        }
+        if (file.getSize() > MAX_AVATAR_SIZE) {
+            throw new RuntimeException("Kích thước ảnh tối đa 5MB!");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType)) {
+            throw new RuntimeException("Chỉ chấp nhận ảnh: JPEG, PNG, GIF, WebP!");
+        }
+
+        UserEntity user = userRepository.findByEmail(
+                        SecurityContextHolder.getContext().getAuthentication().getName())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng hiện tại!"));
+
+        String ext = getExtension(contentType);
+        String filename = "avatar_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+        Path uploadDir = Paths.get(uploadBasePath, "avatars").toAbsolutePath().normalize();
+        Files.createDirectories(uploadDir);
+        Path filePath = uploadDir.resolve(filename);
+        file.transferTo(filePath.toFile());
+
+        String avatarUrl = "/uploads/avatars/" + filename;
+        user.setAvatarUrl(avatarUrl);
+        UserEntity updated = userRepository.save(user);
+
+        return new UserResponse(
+                updated.getId(),
+                updated.getEmail(),
+                updated.getFullName(),
+                updated.getAvatarUrl(),
+                updated.getRole(),
+                updated.getStatus(),
+                updated.getCreatedAt()
+        );
+    }
+
+    private String getExtension(String contentType) {
+        return switch (contentType) {
+            case "image/png" -> ".png";
+            case "image/gif" -> ".gif";
+            case "image/webp" -> ".webp";
+            default -> ".jpg";
+        };
     }
 }

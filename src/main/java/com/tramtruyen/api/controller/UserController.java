@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -52,6 +54,13 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateCurrentUser(@Valid @RequestBody UserUpdateRequest request) {
         UserResponse response = userService.updateCurrentUser(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // Tải ảnh đại diện lên
+    @PostMapping("/me/avatar")
+    public ResponseEntity<UserResponse> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
+        UserResponse response = userService.uploadAvatar(file);
         return ResponseEntity.ok(response);
     }
 }

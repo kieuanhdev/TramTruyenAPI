@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll() // Đăng ký
                         // Cho phép mọi người ĐỌC dữ liệu thoải mái (GET)
                         .requestMatchers(HttpMethod.GET, "/api/v1/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         // Tất cả các request khác (POST truyện, POST chương...) BẮT BUỘC ĐĂNG NHẬP
                         // THÊM DÒNG NÀY VÀO: Mở toang cửa cho Swagger UI
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
