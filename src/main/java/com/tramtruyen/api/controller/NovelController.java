@@ -2,6 +2,7 @@ package com.tramtruyen.api.controller;
 
 import com.tramtruyen.api.service.NovelService;
 import com.tramtruyen.api.dto.request.NovelCreateRequest;
+import com.tramtruyen.api.dto.response.CoverUploadResponse;
 import com.tramtruyen.api.dto.response.NovelResponse;
 import com.tramtruyen.api.dto.response.PageResponse;
 import jakarta.validation.Valid;
@@ -10,7 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +34,13 @@ public class NovelController {
     @GetMapping("/{id}")
     public ResponseEntity<NovelResponse> getNovelById(@PathVariable UUID id) {
         NovelResponse response = novelService.getNovelById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/upload-cover")
+    @PreAuthorize("hasRole('AUTHOR') or hasRole('ADMIN')")
+    public ResponseEntity<CoverUploadResponse> uploadCover(@RequestParam("file") MultipartFile file) throws IOException {
+        CoverUploadResponse response = novelService.uploadCover(file);
         return ResponseEntity.ok(response);
     }
 

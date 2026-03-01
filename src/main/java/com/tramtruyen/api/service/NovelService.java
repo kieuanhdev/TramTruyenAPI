@@ -7,9 +7,11 @@ import com.tramtruyen.api.repository.CategoryRepository;
 import com.tramtruyen.api.repository.NovelRepository;
 import com.tramtruyen.api.repository.UserRepository;
 import com.tramtruyen.api.dto.request.NovelCreateRequest;
+import com.tramtruyen.api.dto.response.CoverUploadResponse;
 import com.tramtruyen.api.dto.response.NovelResponse;
 import com.tramtruyen.api.dto.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +19,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,9 +33,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NovelService {
 
+    private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
+            "image/jpeg", "image/png", "image/gif", "image/webp"
+    );
+    private static final long MAX_COVER_SIZE = 5 * 1024 * 1024; // 5MB
+
     private final NovelRepository novelRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+
+    @Value("${app.upload.base-path:./uploads}")
+    private String uploadBasePath;
 
     @Transactional
     public NovelResponse createNovel(NovelCreateRequest request) {
@@ -123,5 +139,41 @@ public class NovelService {
                 novelPage.getTotalPages(),
                 novelPage.isLast()
         );
+    }
+
+    /**
+     * Tải ảnh bìa truyện lên server.
+     * Trả về URL đường dẫn ảnh (vd: /uploads/covers/cover_xxx.jpg)
+     */
+    public CoverUploadResponse uploadCover(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn ảnh bìa để tải lên!");
+        }
+        if (file.getSize() > MAX_COVER_SIZE) {
+            throw new RuntimeException("Kích thước ảnh bìa tối đa 5MB!");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType)) {
+            throw new RuntimeException("Chỉ chấp nhận ảnh: JPEG, PNG, GIF, WebP!");
+        }
+
+        String ext = getExtension(contentType);
+        String filename = "cover_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+        Path uploadDir = Paths.get(uploadBasePath, "covers").toAbsolutePath().normalize();
+        Files.createDirectories(uploadDir);
+        Path filePath = uploadDir.resolve(filename);
+        file.transferTo(filePath.toFile());
+
+        String coverUrl = "/uploads/covers/" + filename;
+        return new CoverUploadResponse(coverUrl);
+    }
+
+    private String getExtension(String contentType) {
+        return switch (contentType) {
+            case "image/png" -> ".png";
+            case "image/gif" -> ".gif";
+            case "image/webp" -> ".webp";
+            default -> ".jpg";
+        };
     }
 }
